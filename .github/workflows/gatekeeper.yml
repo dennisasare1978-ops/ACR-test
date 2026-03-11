@@ -2,7 +2,7 @@ name: Security Gatekeeper Pipeline
 
 on:
   push:
-    branches: [ "main", "vulnerable" ]
+    branches: ["main", "vulnerable"]
   workflow_dispatch:
 
 jobs:
@@ -10,17 +10,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      # 1️⃣ Checkout code
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Build Docker image
+      # 2️⃣ Build your Docker image
+      - name: Build Docker Image
         run: docker build -t vulnerable-app:local .
 
-      - name: Run Trivy Security Scan
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          image-ref: vulnerable-app:local
-          format: table
-          exit-code: 1
-          severity: CRITICAL
-          ignore-unfixed: true
+      # 3️⃣ Run Trivy inside its official Docker container
+      - name: Run Trivy Scan (Docker)
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.56.1 image \
+          --format table \
+          --exit-code 1 \
+          --severity CRITICAL \
+          --ignore-unfixed \
+          vulnerable-app:local
