@@ -27,13 +27,7 @@ jobs:
         run: |
           docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/vulnerable-app:${{ github.sha }} .
 
-      # 4. Setup Trivy (use 'latest')
-      - name: Setup Trivy
-        uses: aquasecurity/setup-trivy@v0.2.1
-        with:
-          version: latest
-
-      # 5. Run Trivy scan
+      # 4. Run Trivy Security Scan (no separate setup needed)
       - name: Run Trivy Security Scan
         uses: aquasecurity/trivy-action@0.28.0
         with:
@@ -43,7 +37,7 @@ jobs:
           severity: CRITICAL
           ignore-unfixed: true
 
-      # 6. Push to ACR only if scan passes
+      # 5. Push to ACR only if scan passes
       - name: Push Image to ACR
         if: success()
         run: |
