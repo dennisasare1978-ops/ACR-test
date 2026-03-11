@@ -4,7 +4,7 @@ name: Security Gatekeeper Pipeline
 on:
   push:
     branches: [ "main", "vulnerable" ]
-  workflow_dispatch:
+  workflow_dispatch: # Allows manual triggering for testing
 
 jobs:
   build-scan-push:
@@ -18,6 +18,7 @@ jobs:
           fetch-depth: 0
 
       # 2. Login to Azure Container Registry
+      # We log in early so we are ready, but we WON'T push yet.
       - name: Login to ACR
         uses: docker/login-action@v3
         with:
@@ -25,12 +26,16 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
-      # 3. Build Docker Image
+      # 3. Build the Image
+      # We build it locally on the runner. It is NOT in Azure yet.
       - name: Build Docker Image
         run: |
           docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/vulnerable-app:${{ github.sha }} .
 
-      # 4. Trivy Security Scan (Gatekeeper)
+      # 4. The Gatekeeper: Trivy Scan
+      # This is the most important step.
+      # exit-code: '1' -> Creates a pipeline FAILURE if vulns are found.
+      # severity: 'CRITICAL' -> Only blocks for Critical issues.
       - name: Run Trivy Security Scan
         uses: aquasecurity/trivy-action@0.28.0
         with:
@@ -40,7 +45,9 @@ jobs:
           severity: 'CRITICAL'
           ignore-unfixed: true
 
-      # 5. Push Image (only if scan passes)
+      # 5. Push to ACR
+      # This step only runs if Step 4 (Trivy) succeeded.
+      # Since we are on the 'vulnerable' branch, this step should naturally SKIP/CANCEL.
       - name: Push Image to ACR
         if: success()
         run: |
