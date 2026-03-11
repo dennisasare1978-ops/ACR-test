@@ -1,24 +1,25 @@
 name: Security Gatekeeper Pipeline
 
+# Trigger the workflow on pushes to main or vulnerable branch
 on:
   push:
     branches: [ "main", "vulnerable" ]
-  workflow_dispatch:
+  workflow_dispatch: # Allows manual trigger
 
 jobs:
   build-scan-push:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout code
+      # 1️⃣ Checkout the repo
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Debug: list files
+      # 2️⃣ Debug: list files (optional but helps verify Dockerfile exists)
       - name: List repo files
         run: ls -l
 
-      # 3. Login to ACR
+      # 3️⃣ Login to Azure Container Registry (optional if pushing image)
       - name: Login to Azure Container Registry
         uses: docker/login-action@v3
         with:
@@ -26,11 +27,11 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
-      # 4. Build Docker image
+      # 4️⃣ Build Docker image
       - name: Build Docker Image
         run: docker build -t vulnerable-app:local .
 
-      # 5. Run Trivy scan (only)
+      # 5️⃣ Run Trivy security scan (CRITICAL only)
       - name: Run Trivy Security Scan
         uses: aquasecurity/trivy-action@0.28.0
         with:
@@ -40,7 +41,7 @@ jobs:
           severity: CRITICAL
           ignore-unfixed: true
 
-      # 6. Push to ACR (if scan passes)
+      # 6️⃣ Push image to ACR (only if Trivy scan passes)
       - name: Push Image to ACR
         if: success()
         run: docker push ${{ secrets.ACR_LOGIN_SERVER }}/vulnerable-app:local
