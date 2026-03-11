@@ -10,15 +10,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Build Docker image
-      - name: Build Docker Image
+      - name: Build Docker image
         run: docker build -t vulnerable-app:local .
 
-      # 3. Run Trivy scan
       - name: Run Trivy Security Scan
         uses: aquasecurity/trivy-action@0.28.0
         with:
